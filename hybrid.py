@@ -110,20 +110,27 @@ class Identity(SQLIdentity):
             return _filter_user(user_ref.to_dict())
 
         # then try LDAP
-        name_filter = '(%s=%s)' % (self.user.attribute_mapping['name'],
-                                   ldap_filter.escape_filter_chars(user_name))
-        users = self.user._ldap_get_all(name_filter)
+        conn = self.user.get_connection()
+        query = '(&(objectClass=%s)(%s=%s))' % (
+            self.user.object_class,
+            self.user.attribute_mapping['name'],
+            ldap_filter.escape_filter_chars(user_name))
 
         try:
-            user_ref = self.user._ldap_res_to_model(users[0])
-        except IndexError:
+            users = conn.search_s(self.user.tree_dn,
+                                  config.CONF.ldap.user_search_scope,
+                                  query)
+        except ldap.NO_SUCH_OBJECT:
             return None
+
+        if not users:
+            return None
+
+        user_ref = self.user._ldap_res_to_model(users[0])
 
         # the DN is the first element in the returned user tuple
         self.user_dn = users[0][0]
 
-        if not user_ref:
-            return None
         return _filter_user(user_ref)
 
     def get_tenants_for_user(self, user_id):

@@ -90,7 +90,7 @@ class Identity(SQLIdentity):
         query = '(objectClass=%s)' % self.user.object_class
         try:
             users = conn.search_s(self.user_dn, ldap.SCOPE_BASE, query)
-        except AttributeError, ldap.NO_SUCH_OBJECT:
+        except (AttributeError, ldap.NO_SUCH_OBJECT):
             return None
 
         if users:

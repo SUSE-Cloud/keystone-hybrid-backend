@@ -27,9 +27,6 @@ import default_fixtures
 import test_backend
 
 
-CONF = config.CONF
-
-
 def clear_database():
     db = fakeldap.FakeShelve().get_instance()
     db.clear()
@@ -38,9 +35,9 @@ def clear_database():
 class HybridIdentity(test.TestCase, test_backend.IdentityTests):
     def setUp(self):
         super(HybridIdentity, self).setUp()
-        CONF(config_files=[test.etcdir('keystone.conf'),
-                           test.testsdir('test_overrides.conf'),
-                           test.testsdir('backend_hybrid.conf')])
+        self.config([test.etcdir('keystone.conf'),
+                     test.testsdir('test_overrides.conf'),
+                     test.testsdir('backend_hybrid.conf')])
 
         sql_util.setup_test_database()
         self.identity_api = identity_hybrid.Identity()

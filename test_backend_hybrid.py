@@ -35,7 +35,7 @@ def clear_database():
 class HybridIdentity(test.TestCase, test_backend.IdentityTests):
     def setUp(self):
         super(HybridIdentity, self).setUp()
-        self.config([test.etcdir('keystone.conf'),
+        self.config([test.etcdir('keystone.conf.sample'),
                      test.testsdir('test_overrides.conf'),
                      test.testsdir('backend_hybrid.conf')])
 

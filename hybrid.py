@@ -52,7 +52,10 @@ class Identity(SQLIdentity):
         in the list of tenants on the user.
 
         """
-        user_ref = self._get_user(user_id)
+        try:
+            user_ref = self._get_user(user_id)
+        except exception.UserNotFound:
+            raise AssertionError('Invalid user / password')
 
         # if the user_ref has a password, it's from the SQL backend and
         # we can just check if it coincides with the one we got
@@ -71,11 +74,16 @@ class Identity(SQLIdentity):
         if tenant_id and tenant_id not in tenants:
             raise AssertionError('Invalid tenant')
 
-        tenant_ref = self.get_tenant(tenant_id)
-        if tenant_ref:
+        try:
+            tenant_ref = self.get_tenant(tenant_id)
+            # if the tenant was not found, then there will be no metadata either
             metadata_ref = self.get_metadata(user_id, tenant_id)
-        else:
+        except exception.TenantNotFound:
+            tenant_ref = None
             metadata_ref = {}
+        except exception.MetadataNotFound:
+            metadata_ref = {}
+
         return (_filter_user(user_ref), tenant_ref, metadata_ref)
 
     def _get_user(self, user_id):
@@ -91,15 +99,13 @@ class Identity(SQLIdentity):
         try:
             users = conn.search_s(self.user_dn, ldap.SCOPE_BASE, query)
         except (AttributeError, ldap.NO_SUCH_OBJECT):
-            return None
+            raise exception.UserNotFound(user_id=user_id) 
 
         if users:
             return self.user._ldap_res_to_model(users[0])
 
     def get_user(self, user_id):
         user_ref = self._get_user(user_id)
-        if not user_ref:
-            return None
         return _filter_user(user_ref)
 
     def get_user_by_name(self, user_name):
@@ -121,10 +127,10 @@ class Identity(SQLIdentity):
                                   config.CONF.ldap.user_search_scope,
                                   query)
         except ldap.NO_SUCH_OBJECT:
-            return None
+            raise exception.UserNotFound(user_id=user_name)
 
         if not users:
-            return None
+            raise exception.UserNotFound(user_id=user_name)
 
         user_ref = self.user._ldap_res_to_model(users[0])
 
@@ -134,5 +140,6 @@ class Identity(SQLIdentity):
         return _filter_user(user_ref)
 
     def get_tenants_for_user(self, user_id):
+        self.get_user(user_id)
         session = self.get_session()
         return tenants_for_user(session, user_id)

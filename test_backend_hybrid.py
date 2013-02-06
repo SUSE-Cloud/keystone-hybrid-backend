@@ -42,6 +42,7 @@ class HybridIdentity(test.TestCase, test_backend.IdentityTests):
         sql_util.setup_test_database()
         self.identity_api = identity_hybrid.Identity()
         self.load_fixtures(default_fixtures)
+        self.user_foo['enabled'] = True
 
     def tearDown(self):
         clear_database()

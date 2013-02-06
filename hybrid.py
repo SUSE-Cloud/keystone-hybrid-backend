@@ -27,22 +27,18 @@ from keystone import config
 from keystone import exception
 from keystone.common import sql
 from keystone.common import utils
-from keystone.identity.backends.ldap import UserApi
-from keystone.identity.backends.sql import User
-from keystone.identity.backends.sql import Identity as SQLIdentity
-from keystone.identity.backends.hybrid_config import tenants_for_user
+from keystone import identity
+from keystone.identity.backends import ldap as ldap_backend
+from keystone.identity.backends import sql
 
 
-def _filter_user(user_ref):
-    if user_ref:
-        user_ref.pop('password', None)
-    return user_ref
+CONF = config.CONF
 
 
-class Identity(SQLIdentity):
+class Identity(sql.Identity):
     def __init__(self, *args, **kwargs):
         super(Identity, self).__init__(*args, **kwargs)
-        self.user = UserApi(config.CONF)
+        self.user = ldap_backend.UserApi(CONF)
         
     # Identity interface
     def authenticate(self, user_id=None, tenant_id=None, password=None):
@@ -66,80 +62,54 @@ class Identity(SQLIdentity):
         except KeyError:  # if it doesn't have a password, it must be LDAP
             try:
                 # get_connection does a bind for us which checks the password
-                assert self.user.get_connection(self.user_dn, password)
+                assert self.user.get_connection(self.user._id_to_dn(user_id),
+                                                password)
             except Exception:
                 raise AssertionError('Invalid user / password')
 
-        tenants = self.get_tenants_for_user(user_id)
+        tenants = self.get_projects_for_user(user_id)
         if tenant_id and tenant_id not in tenants:
             raise AssertionError('Invalid tenant')
 
         try:
-            tenant_ref = self.get_tenant(tenant_id)
+            tenant_ref = self.get_project(tenant_id)
             # if the tenant was not found, then there will be no metadata either
             metadata_ref = self.get_metadata(user_id, tenant_id)
-        except exception.TenantNotFound:
+        except exception.ProjectNotFound:
             tenant_ref = None
             metadata_ref = {}
         except exception.MetadataNotFound:
             metadata_ref = {}
 
-        return (_filter_user(user_ref), tenant_ref, metadata_ref)
+        return (identity.filter_user(user_ref), tenant_ref, metadata_ref)
 
     def _get_user(self, user_id):
         # try SQL first
-        session = self.get_session()
-        user_ref = session.query(User).filter_by(id=user_id).first()
-        if user_ref:
-            return user_ref.to_dict()
+        try:
+            user = super(Identity, self)._get_user(user_id)
+        except exception.UserNotFound:
+            pass
+        else:
+            return user
 
         # then try LDAP
-        conn = self.user.get_connection()
-        query = '(objectClass=%s)' % self.user.object_class
-        try:
-            users = conn.search_s(self.user_dn, ldap.SCOPE_BASE, query)
-        except (AttributeError, ldap.NO_SUCH_OBJECT):
-            raise exception.UserNotFound(user_id=user_id) 
-
-        if users:
-            return self.user._ldap_res_to_model(users[0])
+        return self.user.get(user_id)
 
     def get_user(self, user_id):
         user_ref = self._get_user(user_id)
-        return _filter_user(user_ref)
+        return identity.filter_user(user_ref)
 
     def get_user_by_name(self, user_name):
         # try SQL first
-        session = self.get_session()
-        user_ref = session.query(User).filter_by(name=user_name).first()
-        if user_ref:
-            return _filter_user(user_ref.to_dict())
+        try:
+            user = super(Identity, self).get_user_by_name(user_name)
+        except exception.UserNotFound:
+            pass
+        else:
+            return user
 
         # then try LDAP
-        conn = self.user.get_connection()
-        query = '(&(objectClass=%s)(%s=%s))' % (
-            self.user.object_class,
-            self.user.attribute_mapping['name'],
-            ldap_filter.escape_filter_chars(user_name))
-
         try:
-            users = conn.search_s(self.user.tree_dn,
-                                  config.CONF.ldap.user_search_scope,
-                                  query)
-        except ldap.NO_SUCH_OBJECT:
+            return identity.filter_user(self.user.get_by_name(user_name))
+        except exception.NotFound:
             raise exception.UserNotFound(user_id=user_name)
-
-        if not users:
-            raise exception.UserNotFound(user_id=user_name)
-
-        user_ref = self.user._ldap_res_to_model(users[0])
-
-        # the DN is the first element in the returned user tuple
-        self.user_dn = users[0][0]
-
-        return _filter_user(user_ref)
-
-    def get_tenants_for_user(self, user_id):
-        self.get_user(user_id)
-        session = self.get_session()
-        return tenants_for_user(session, user_id)

@@ -3,19 +3,32 @@ keystone-hybrid-backend
 
 hybrid SQL + LDAP backend for openstack keystone
 
-Note: the hybrid backend currently relies on a new configuration option for determining the LDAP scope of the user query:
+If you need to create new roles/tenants which reference the users in the LDAP backend, you have to remove a database Foreign Key constraint which disallows user_id values which are not present in the SQL backend.
 
-```diff
-diff -ruN a/keystone/config.py b/keystone/config.py
---- a/keystone/config.py	2012-11-08 13:02:07.000000000 +0100
-+++ b/keystone/config.py	2012-11-08 13:11:06.000000000 +0100
-@@ -163,7 +163,7 @@
- register_str('suffix', group='ldap', default='cn=example,cn=com')
- register_bool('use_dumb_member', group='ldap', default=False)
- register_str('user_name_attribute', group='ldap', default='sn')
--
-+register_int('user_search_scope', group='ldap', default=1)
- 
- register_str('user_tree_dn', group='ldap', default=None)
- register_str('user_objectclass', group='ldap', default='inetOrgPerson')
+```SQL
+$ pgsql keystone -U keystone -W
+ALTER TABLE user_project_membership DROP CONSTRAINT user_project_membership_user_id_fkey;
+```
+
+or for MySQL:
+
+```SQL
+$ mysql keystone
+SHOW CREATE TABLE user_project_membership; --look for the constraint name
+ALTER TABLE user_project_membership DROP FOREIGN KEY user_project_membership_ibfk_1;
+```
+
+Set the identity backend to `hybrid` (it will use both the LDAP and the SQL backends under the hood):
+
+```
+[identity]
+driver = keystone.identity.backends.hybrid.Identity
+```
+
+Restart keystone.
+
+N.B. Be careful with the case sensitivity of postgresql when modifying user roles. If the user is capitalized in LDAP, then it should be capitalized in `keystone`, too e.g. `JDoe`, instead of `jdoe`
+
+```
+keystone user-role-add --user-id=JDoe --role-id <role-id> --tenant-id <tenant-id>
 ```

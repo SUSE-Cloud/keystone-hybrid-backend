@@ -1,6 +1,6 @@
 # vim: tabstop=4 shiftwidth=4 softtabstop=4
 
-# Copyright 2012 SUSE Linux Products GmbH
+# Copyright 2012-2013 SUSE Linux Products GmbH
 # Copyright 2012 OpenStack LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
@@ -17,11 +17,6 @@
 
 
 """Hybrid Identity backend for Keystone on top of the LDAP and SQL backends"""
-
-from __future__ import absolute_import
-
-import ldap
-from ldap import filter as ldap_filter
 
 from keystone import config
 from keystone import exception

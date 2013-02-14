@@ -15,35 +15,15 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-import nose.exc
-
-from keystone import config
 from keystone import test
-from keystone.common.ldap import fakeldap
-from keystone.common.sql import util as sql_util
-from keystone.identity.backends import hybrid as identity_hybrid
 
-import default_fixtures
 import test_backend
+import test_backend_sql
 
 
-def clear_database():
-    db = fakeldap.FakeShelve().get_instance()
-    db.clear()
-
-
-class HybridIdentity(test.TestCase, test_backend.IdentityTests):
+class HybridIdentity(test_backend_sql.SqlTests, test_backend.IdentityTests):
     def setUp(self):
         super(HybridIdentity, self).setUp()
         self.config([test.etcdir('keystone.conf.sample'),
                      test.testsdir('test_overrides.conf'),
                      test.testsdir('backend_hybrid.conf')])
-
-        sql_util.setup_test_database()
-        self.identity_api = identity_hybrid.Identity()
-        self.load_fixtures(default_fixtures)
-        self.user_foo['enabled'] = True
-
-    def tearDown(self):
-        clear_database()
-        test.TestCase.tearDown(self)

@@ -13,15 +13,16 @@ SQL backend.
 
 ```SQL
 $ pgsql keystone -U keystone -W
-ALTER TABLE user_project_membership DROP CONSTRAINT user_project_membership_user_id_fkey;
+ALTER TABLE user_project_metadata DROP CONSTRAINT user_project_metadata_user_id_fkey;
 ```
 
 or for MySQL:
 
 ```SQL
 $ mysql keystone
-SHOW CREATE TABLE user_project_membership; --look for the constraint name
-ALTER TABLE user_project_membership DROP FOREIGN KEY user_project_membership_ibfk_1;
+SHOW CREATE TABLE user_project_metadata;
+-- look for the constraint name referencing user.id
+ALTER TABLE user_project_metadata DROP FOREIGN KEY user_project_metadata_ibfk_1;
 ```
 
 Set the identity backend to `hybrid` (it will use both the LDAP and the SQL backends under the hood):

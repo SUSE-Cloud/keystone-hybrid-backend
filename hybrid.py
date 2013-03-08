@@ -94,10 +94,10 @@ class Identity(sql.Identity):
         user_ref = self._get_user(user_id)
         return identity.filter_user(user_ref)
 
-    def get_user_by_name(self, user_name):
+    def get_user_by_name(self, user_name, domain_id):
         # try SQL first
         try:
-            user = super(Identity, self).get_user_by_name(user_name)
+            user = super(Identity, self).get_user_by_name(user_name, domain_id)
         except exception.UserNotFound:
             pass
         else:
@@ -105,6 +105,7 @@ class Identity(sql.Identity):
 
         # then try LDAP
         try:
-            return identity.filter_user(self.user.get_by_name(user_name))
+            return identity.filter_user(
+                self.user.get_by_name(user_name, domain_id))
         except exception.NotFound:
             raise exception.UserNotFound(user_id=user_name)

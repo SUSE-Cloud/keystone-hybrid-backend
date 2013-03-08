@@ -34,6 +34,10 @@ driver = keystone.identity.backends.hybrid.Identity
 
 Restart keystone.
 
+
+Apply the patch at https://review.openstack.org/#/c/23929/ . This should eventually be upstream.
+
+
 N.B. Be careful with the case sensitivity of postgresql when modifying
 user roles. If the user is capitalized in LDAP, then it should be
 capitalized in `keystone`, too e.g. `JDoe`, instead of `jdoe`

@@ -1,7 +1,10 @@
-keystone-hybrid-backend
-=======================
+# hybrid SQL and LDAP backend for OpenStack Keystone #
 
-hybrid SQL + LDAP backend for openstack keystone
+This is a proof of concept to allow LDAP authentication while using the SQL backend for all the usual operations. No users or groups are copied from LDAP. For granting roles to users (`keystone user-role-add`), only the user id from LDAP is inserted into the SQL backend.
+
+* * *
+
+## Installation ##
 
 Since this backend relies on both the LDAP and SQL backends, you have to configure both beforehand. Use the usual configuration options found in /etc/keystone/keystone.conf. However, from the LDAP backend's config, only the ldap.user* options will be used by the hybrid backend (so no tenant/role options). You might even want to test that everything is working fine before switching to the hybrid backend by trying to login with the LDAP backend first.
 

@@ -76,7 +76,8 @@ class Identity(sql.Identity):
         except exception.MetadataNotFound:
             metadata_ref = {}
 
-        return (identity.filter_user(user_ref), tenant_ref, metadata_ref)
+        user_ref = _set_default_domain(identity.filter_user(user_ref))
+        return (user_ref, tenant_ref, metadata_ref)
 
     def _get_user(self, user_id):
         # try SQL first
@@ -91,8 +92,8 @@ class Identity(sql.Identity):
         return self.user.get(user_id)
 
     def get_user(self, user_id):
-        user_ref = self._get_user(user_id)
-        return identity.filter_user(user_ref)
+        user_ref = identity.filter_user(self._get_user(user_id))
+        return _set_default_domain(user_ref)
 
     def get_user_by_name(self, user_name, domain_id):
         # try SQL first
@@ -104,8 +105,25 @@ class Identity(sql.Identity):
             return user
 
         # then try LDAP
-        try:
-            return identity.filter_user(
-                self.user.get_by_name(user_name, domain_id))
-        except exception.NotFound:
-            raise exception.UserNotFound(user_id=user_name)
+        _validate_domain_id(domain_id)
+        ref = identity.filter_user(self.user.get_by_name(user_name))
+        return _set_default_domain(ref)
+
+
+def _validate_domain_id(domain_id):
+    """Validate that the domain ID specified belongs to the default domain.
+
+    """
+    if domain_id != CONF.identity.default_domain_id:
+        raise exception.DomainNotFound(domain_id=domain_id)
+
+def _set_default_domain(ref):
+    """Overrides any domain reference with the default domain."""
+    if isinstance(ref, dict):
+        ref = ref.copy()
+        ref['domain_id'] = CONF.identity.default_domain_id
+        return ref
+    elif isinstance(ref, list):
+        return [_set_default_domain(x) for x in ref]
+    else:
+        raise ValueError(_('Expected dict or list: %s') % type(ref))

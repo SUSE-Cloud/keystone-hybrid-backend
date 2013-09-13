@@ -109,6 +109,10 @@ class Identity(sql.Identity):
         ref = identity.filter_user(self.user.get_by_name(user_name))
         return _set_default_domain(ref)
 
+    def list_users(self):
+        sql_users = super(Identity, self).list_users()
+        ldap_users = _set_default_domain(self.user.get_all())
+        return sql_users + ldap_users
 
 def _validate_domain_id(domain_id):
     """Validate that the domain ID specified belongs to the default domain.

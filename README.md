@@ -42,7 +42,7 @@ driver = keystone.identity.backends.hybrid.Identity
 Restart keystone.
 
 
-N.B. Use the LDAP user-id returned by the keystone user-list query.
+N.B. Use the LDAP user-id returned by the `keystone user-list` query.
 
 ```
 keystone user-role-add --user-id=12345 --role-id <role-id> --tenant-id <tenant-id>

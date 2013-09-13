@@ -10,8 +10,7 @@ The code in this branch has only been tested on the stable/grizzly branch of ope
 
 Since this backend relies on both the LDAP and SQL backends, you have to configure both beforehand. Use the usual configuration options found in /etc/keystone/keystone.conf. However, from the LDAP backend's config, only the ldap.user* options will be used by the hybrid backend (so no tenant/role options).
 
-You should try to see that user authentication works fine with the LDAP backend before trying on the hybrid backend.
-
+You should try to see that user authentication works fine with the LDAP backend before trying on the hybrid backend. Also make sure that `keystone user-list` works using the LDAP identity backend.
 
 You will probably need to create new roles/tenants which reference the
 users in the LDAP backend, you have to remove a database Foreign Key

@@ -2,11 +2,15 @@
 
 This is a proof of concept to allow LDAP authentication while using the SQL backend for all the usual operations. No users or groups are copied from LDAP. For granting roles to users (`keystone user-role-add`), only the user id from LDAP is inserted into the SQL backend.
 
+The code in this branch has only been tested on the stable/grizzly branch of openstack keystone!
+
 * * *
 
 ## Installation ##
 
-Since this backend relies on both the LDAP and SQL backends, you have to configure both beforehand. Use the usual configuration options found in /etc/keystone/keystone.conf. However, from the LDAP backend's config, only the ldap.user* options will be used by the hybrid backend (so no tenant/role options). You might even want to test that everything is working fine before switching to the hybrid backend by trying to login with the LDAP backend first.
+Since this backend relies on both the LDAP and SQL backends, you have to configure both beforehand. Use the usual configuration options found in /etc/keystone/keystone.conf. However, from the LDAP backend's config, only the ldap.user* options will be used by the hybrid backend (so no tenant/role options).
+
+You should try to see that user authentication works fine with the LDAP backend before trying on the hybrid backend.
 
 
 You will probably need to create new roles/tenants which reference the
@@ -38,13 +42,8 @@ driver = keystone.identity.backends.hybrid.Identity
 Restart keystone.
 
 
-Apply the patch at https://review.openstack.org/#/c/23929/ . This should eventually be upstream.
-
-
-N.B. Be careful with the case sensitivity of postgresql when modifying
-user roles. If the user is capitalized in LDAP, then it should be
-capitalized in `keystone`, too e.g. `JDoe`, instead of `jdoe`
+N.B. Use the LDAP user-id returned by the keystone user-list query.
 
 ```
-keystone user-role-add --user-id=JDoe --role-id <role-id> --tenant-id <tenant-id>
+keystone user-role-add --user-id=12345 --role-id <role-id> --tenant-id <tenant-id>
 ```

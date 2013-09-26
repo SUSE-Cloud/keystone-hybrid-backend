@@ -22,13 +22,15 @@ from keystone import config
 from keystone import exception
 from keystone.common import sql
 from keystone.common import utils
+from keystone.common import logging
 from keystone import identity
 from keystone.identity.backends import ldap as ldap_backend
 from keystone.identity.backends import sql
 
-
+DEFAULT_TENANT = 'normal'
+DEFAULT_DOMAIN = 'default'
 CONF = config.CONF
-
+LOG = logging.getLogger(__name__)
 
 class Identity(sql.Identity):
     def __init__(self, *args, **kwargs):
@@ -67,6 +69,14 @@ class Identity(sql.Identity):
             raise AssertionError('Invalid tenant')
 
         try:
+            # we've hacked get_projects_for_user to return a tenant that
+            # is not assigned to this user in the database, so we have
+            # to set it here as well
+            tenant_id = tenants[0]
+        except KeyError:
+            pass
+
+        try:
             tenant_ref = self.get_project(tenant_id)
             # if the tenant was not found, then there will be no metadata either
             metadata_ref = self.get_metadata(user_id, tenant_id)
@@ -92,10 +102,12 @@ class Identity(sql.Identity):
         return self.user.get(user_id)
 
     def get_user(self, user_id):
+        LOG.debug("Called get_user %s" % user_id)
         user_ref = identity.filter_user(self._get_user(user_id))
         return _set_default_domain(user_ref)
 
     def get_user_by_name(self, user_name, domain_id):
+        LOG.debug("Called get_user_by_name %s, %s" % (user_name, domain_id))
         # try SQL first
         try:
             user = super(Identity, self).get_user_by_name(user_name, domain_id)
@@ -113,6 +125,15 @@ class Identity(sql.Identity):
         sql_users = super(Identity, self).list_users()
         ldap_users = _set_default_domain(self.user.get_all())
         return sql_users + ldap_users
+
+    def get_projects_for_user(self, user_id):
+        project_ids = super(Identity, self).get_projects_for_user(user_id)
+        default_project = self.get_project_by_name(DEFAULT_TENANT, DEFAULT_DOMAIN)
+        project_ids.append(default_project['id'])
+        LOG.debug("get_projects_for_user returns %s" % project_ids)
+
+        return project_ids
+
 
 def _validate_domain_id(domain_id):
     """Validate that the domain ID specified belongs to the default domain.

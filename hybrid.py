@@ -27,7 +27,7 @@ from keystone import identity
 from keystone.identity.backends import ldap as ldap_backend
 from keystone.identity.backends import sql
 
-DEFAULT_TENANT = 'normal'
+DEFAULT_TENANT = 'default_tenant'
 DEFAULT_DOMAIN = 'default'
 CONF = config.CONF
 LOG = logging.getLogger(__name__)

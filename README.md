@@ -40,6 +40,8 @@ driver = keystone.identity.backends.hybrid.Identity
 
 Restart keystone.
 
+Copy the `hybrid.py` file to the `keystone/identity/backends/` folder of your installation (e.g. `/usr/lib/python/site-packages/keystone/identity/backends/hybrid.py`). Edit the file and set the `DEFAULT_TENANT` and `DEFAULT_DOMAIN` constants at the top of the file. The tenant should already exist in keystone.
+
 
 N.B. Use the LDAP user-id returned by the `keystone user-list` query.
 

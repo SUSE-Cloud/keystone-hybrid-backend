@@ -20,7 +20,7 @@
 
 from keystone import config
 from keystone import exception
-from keystone.common import sql
+from keystone.common import sql as keystone_sql
 from keystone.common import utils
 from keystone.common import logging
 from keystone import identity
@@ -29,6 +29,7 @@ from keystone.identity.backends import sql
 
 DEFAULT_TENANT = 'default_tenant'
 DEFAULT_DOMAIN = 'default'
+DEFAULT_ROLE = 'default_role'
 CONF = config.CONF
 LOG = logging.getLogger(__name__)
 
@@ -50,6 +51,7 @@ class Identity(sql.Identity):
         except exception.UserNotFound:
             raise AssertionError('Invalid user / password')
 
+        ldap_user = False
         # if the user_ref has a password, it's from the SQL backend and
         # we can just check if it coincides with the one we got
         try:
@@ -63,18 +65,11 @@ class Identity(sql.Identity):
                                                 password)
             except Exception:
                 raise AssertionError('Invalid user / password')
+            ldap_user = True
 
         tenants = self.get_projects_for_user(user_id)
         if tenant_id and tenant_id not in tenants:
             raise AssertionError('Invalid tenant')
-
-        try:
-            # we've hacked get_projects_for_user to return a tenant that
-            # is not assigned to this user in the database, so we have
-            # to set it here as well
-            tenant_id = tenants[0]
-        except KeyError:
-            pass
 
         try:
             tenant_ref = self.get_project(tenant_id)
@@ -84,10 +79,32 @@ class Identity(sql.Identity):
             tenant_ref = None
             metadata_ref = {}
         except exception.MetadataNotFound:
-            metadata_ref = {}
+            if ldap_user:
+                # if the metadata does not exist and this is an LDAP user we
+                # assign it a default tenant and role
+                default_tenant_id = self.get_project_by_name(
+                    DEFAULT_TENANT, DEFAULT_DOMAIN)['id']
+                default_tenant_id = default
+                role_id = self._get_role_id(DEFAULT_ROLE)
+                self.add_role_to_user_and_project(user_id, default_tenant_id, role_id)
+                metadata_ref = self.get_metadata(user_id, default_tenant_id)
+                LOG.debug("Added the %s role to user %s with default_tenant %s." %
+                          (role_id, user_id, default_tenant_id))
+            else:
+                metadata_ref = {}
 
         user_ref = _set_default_domain(identity.filter_user(user_ref))
         return (user_ref, tenant_ref, metadata_ref)
+
+    def _get_role_id(self, role_name):
+        session = self.get_session()
+        query = session.query(sql.Role).filter_by(name=role_name)
+        try:
+            role_ref = query.one()
+        except keystone_sql.NotFound:
+            raise exception.RoleNotFound(role_id=role_name)
+
+        return role_ref.to_dict()['id']
 
     def _get_user(self, user_id):
         # try SQL first
@@ -132,7 +149,7 @@ class Identity(sql.Identity):
         project_ids.append(default_project['id'])
         LOG.debug("get_projects_for_user returns %s" % project_ids)
 
-        return project_ids
+        return list(set(project_ids))
 
 
 def _validate_domain_id(domain_id):

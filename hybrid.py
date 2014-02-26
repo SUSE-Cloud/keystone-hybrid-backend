@@ -26,9 +26,6 @@ from keystone.identity.backends import ldap as ldap_backend
 from keystone.identity.backends import sql
 from keystone.openstack.common import log
 
-DEFAULT_TENANT = 'default_tenant'
-DEFAULT_DOMAIN = 'default'
-DEFAULT_ROLE = 'default_role'
 CONF = config.CONF
 LOG = log.getLogger(__name__)
 

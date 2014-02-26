@@ -25,7 +25,7 @@ from keystone import identity
 from keystone.identity.backends import ldap as ldap_backend
 from keystone.identity.backends import sql
 from keystone.openstack.common import log
-from keystone.openstack.gettextutils import _
+from keystone.openstack.common.gettextutils import _
 
 DEFAULT_TENANT = 'default_tenant'
 DEFAULT_DOMAIN = 'default'

@@ -19,13 +19,12 @@
 """Hybrid Identity backend for Keystone on top of the LDAP and SQL backends"""
 
 from keystone import config
-from keystone import exception
 from keystone.common import utils
+from keystone import exception
 from keystone import identity
 from keystone.identity.backends import ldap as ldap_backend
 from keystone.identity.backends import sql
 from keystone.openstack.common import log
-from keystone.openstack.common.gettextutils import _
 
 DEFAULT_TENANT = 'default_tenant'
 DEFAULT_DOMAIN = 'default'
@@ -38,6 +37,7 @@ class Identity(sql.Identity):
     def __init__(self, *args, **kwargs):
         super(Identity, self).__init__(*args, **kwargs)
         self.user = ldap_backend.UserApi(CONF)
+        self.domain_aware = True
 
     # Identity interface
     def authenticate(self, user_id, password):
@@ -68,11 +68,18 @@ class Identity(sql.Identity):
                 assert conn
             except Exception:
                 raise AssertionError('Invalid user / password')
+            else:
+                LOG.debug("Authenticated user with LDAP.")
+                self.domain_aware = False
             finally:
                 if conn:
                     conn.unbind_s()
 
-        return _set_default_domain(identity.filter_user(user_ref))
+        LOG.debug("Authenticated user with SQL.")
+        return identity.filter_user(user_ref)
+
+    def is_domain_aware(self):
+        return self.domain_aware
 
     def _get_user(self, session, user_id):
         # try SQL first
@@ -80,7 +87,7 @@ class Identity(sql.Identity):
             user_ref = super(Identity, self)._get_user(session, user_id)
         except exception.UserNotFound:
             # then try LDAP
-            return _set_default_domain(self.user.get(user_id))
+            return self.user.get(user_id)
         else:
             return user_ref.to_dict()
 
@@ -96,9 +103,7 @@ class Identity(sql.Identity):
             user = super(Identity, self).get_user_by_name(user_name, domain_id)
         except exception.UserNotFound:
             # then try LDAP
-            user_ref = identity.filter_user(self.user.get_by_name(user_name))
-            _validate_default_domain_id(domain_id)
-            return _set_default_domain(user_ref)
+            return identity.filter_user(self.user.get_by_name(user_name))
         else:
             return user
 
@@ -106,23 +111,3 @@ class Identity(sql.Identity):
         sql_users = super(Identity, self).list_users()
         ldap_users = self.user.get_all_filtered()
         return sql_users + ldap_users
-
-
-# copied from keystone.assignment.core
-def _set_default_domain(ref):
-    """If the domain ID has not been set, set it to the default."""
-    if isinstance(ref, dict):
-        if 'domain_id' not in ref:
-            ref = ref.copy()
-            ref['domain_id'] = CONF.identity.default_domain_id
-        return ref
-    elif isinstance(ref, list):
-        return [_set_default_domain(x) for x in ref]
-    else:
-        raise ValueError(_('Expected dict or list: %s') % type(ref))
-
-
-def _validate_default_domain_id(domain_id):
-    """Validate that the domain ID specified belongs to the default domain."""
-    if domain_id != CONF.identity.default_domain_id:
-        raise exception.DomainNotFound(domain_id=domain_id)

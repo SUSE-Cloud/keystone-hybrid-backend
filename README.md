@@ -19,7 +19,7 @@ Set the identity backend to `hybrid` (it will use both the LDAP and the SQL back
 driver = keystone.identity.backends.hybrid.Identity
 ```
 
-Copy the `hybrid_identity.py` file to the `keystone/identity/backends/` folder of your installation as `hybrid.py` *note the rename!* (e.g. `/usr/lib/python/site-packages/keystone/identity/backends/hybrid.py`).
+Copy the `hybrid_identity.py` file to the `keystone/identity/backends/` folder of your installation as `hybrid.py` (e.g. `/usr/lib/python/site-packages/keystone/identity/backends/hybrid.py`). **Note the rename!**
 
 Restart keystone.
 

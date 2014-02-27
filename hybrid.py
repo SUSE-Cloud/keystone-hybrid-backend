@@ -71,8 +71,9 @@ class Identity(sql.Identity):
             finally:
                 if conn:
                     conn.unbind_s()
+        else:
+            LOG.debug("Authenticated user with SQL.")
 
-        LOG.debug("Authenticated user with SQL.")
         return identity.filter_user(user_ref)
 
     def is_domain_aware(self):

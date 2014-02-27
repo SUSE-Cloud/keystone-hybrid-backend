@@ -1,6 +1,4 @@
-# vim: tabstop=4 shiftwidth=4 softtabstop=4
-
-# Copyright 2012-2013 SUSE Linux Products GmbH
+# Copyright 2012-2014 SUSE Linux Products GmbH
 # Copyright 2012 OpenStack LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may

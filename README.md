@@ -1,12 +1,12 @@
 # hybrid SQL and LDAP backends for OpenStack Keystone
 
+**The code in this branch is only for development and should not be used. It is meant to be an in-between branch for switching from one stable release to the next. Check out one of the stable/* branches instead.**
+
 This project provides two alternative backends for Keystone:
 
 ## The Identity Backend
 
 This allows authentication with LDAP **and** SQL while using the SQL backend for all the usual operations. No users or groups are copied from LDAP. LDAP users are assigned a default role and tenant when they first login if they don't already have one (user_project_metadata table). For granting roles to users (`keystone user-role-add`), only the user id from LDAP is inserted into the SQL backend.
-
-The code in this branch has only been tested on the **stable/havana** branch of OpenStack Keystone! Check out the other git branches if you need code for different OpenStack releases.
 
 * * *
 

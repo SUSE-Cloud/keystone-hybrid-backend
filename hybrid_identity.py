@@ -21,14 +21,15 @@ from keystone.common import utils
 from keystone import exception
 from keystone import identity
 from keystone.identity.backends import ldap as ldap_backend
-from keystone.identity.backends import sql
+from keystone.identity.backends import sql as sql_ident
+from keystone.common import sql
 from keystone.openstack.common import log
 
 CONF = config.CONF
 LOG = log.getLogger(__name__)
 
 
-class Identity(sql.Identity):
+class Identity(sql_ident.Identity):
     def __init__(self, *args, **kwargs):
         super(Identity, self).__init__(*args, **kwargs)
         self.user = ldap_backend.UserApi(CONF)
@@ -42,7 +43,7 @@ class Identity(sql.Identity):
         it tries the LDAP backend.
 
         """
-        session = self.get_session()
+        session = sql.get_session()
         try:
             user_ref = self._get_user(session, user_id)
         except exception.UserNotFound:
@@ -89,7 +90,7 @@ class Identity(sql.Identity):
 
     def get_user(self, user_id):
         LOG.debug("Called get_user %s" % user_id)
-        session = self.get_session()
+        session = sql.get_session()
         return identity.filter_user(self._get_user(session, user_id))
 
     def get_user_by_name(self, user_name, domain_id):
@@ -103,7 +104,7 @@ class Identity(sql.Identity):
         else:
             return user
 
-    def list_users(self):
-        sql_users = super(Identity, self).list_users()
+    def list_users(self, hints):
+        sql_users = super(Identity, self).list_users(hints)
         ldap_users = self.user.get_all_filtered()
         return sql_users + ldap_users

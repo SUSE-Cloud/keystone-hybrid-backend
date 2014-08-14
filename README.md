@@ -1,8 +1,6 @@
 # hybrid SQL and LDAP backends for OpenStack Keystone
 
-**The code in this branch is only for development and should not be used. It is meant to be an in-between branch for switching from one stable release to the next. Check out one of the stable/* branches instead.**
-
-This project provides two alternative backends for Keystone:
+The code in this branch has only been tested on the **stable/icehouse** branch of OpenStack Keystone! Check out the other git branches if you need code for different OpenStack releases.
 
 ## The Identity Backend
 
@@ -27,7 +25,7 @@ driver = keystone.identity.backends.hybrid_identity.Identity
 
 Restart keystone.
 
-Now you can assign custom roles to users in LDAP. Make user you use one of the LDAP user-ids returned by the `keystone user-list` query.
+Now you can assign custom roles to users in LDAP. Make sure you use one of the LDAP user-ids returned by the `keystone user-list` query.
 
 ```
 keystone user-role-add --user-id=12345 --role-id <role-id> --tenant-id <tenant-id>

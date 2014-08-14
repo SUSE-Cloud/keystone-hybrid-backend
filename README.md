@@ -32,27 +32,3 @@ Now you can assign custom roles to users in LDAP. Make user you use one of the L
 ```
 keystone user-role-add --user-id=12345 --role-id <role-id> --tenant-id <tenant-id>
 ```
-
-
-## The Assignment Backend
-
-This allows setting a default role and project for users signing in via LDAP. It adds the new user-project-role association to the database (basically doing `keystone user-role-add`), the first time that an LDAP user successfully authenticates. This should be useful when you have a lot of LDAP users which you want to grant a default role to in OpenStack automatically only if/when they decide to use it. Caveat: this won't delete the user-role-project association from the database when users are deleted from LDAP. In fact it won't ever delete anything.
-
-It uses the SQL assignment backend under the hood by default.
-
-
-### Installation
-
-Edit the `hybrid_assignment.py` file in this project and set the `DEFAULT_PROJECT`, `DEFAULT_ROLE` and `DEFAULT_DOMAIN` constants at the top of the file. These should already exist in the database!
-
-Then copy the edited `hybrid_assignment.py` file to the `keystone/identity/backends/` folder of your installation (e.g. `/usr/lib/python/site-packages/keystone/assignment/backends/hybrid_assignment.py`).
-
-
-Set this in your `keystone.conf` file:
-
-```
-[assignment]
-driver = keystone.assignment.backends.hybrid_assignment.Assignment
-```
-
-Restart keystone.

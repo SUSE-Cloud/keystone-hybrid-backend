@@ -2,6 +2,8 @@
 
 The code in this branch has only been tested on the **stable/icehouse** branch of OpenStack Keystone! Check out the other git branches if you need code for different OpenStack releases.
 
+This project provides two alternative backends for Keystone:
+
 ## The Identity Backend
 
 This allows authentication with LDAP **and** SQL while using the SQL backend for all the usual operations. No users or groups are copied from LDAP. LDAP users are assigned a default role and tenant when they first login if they don't already have one (user_project_metadata table). For granting roles to users (`keystone user-role-add`), only the user id from LDAP is inserted into the SQL backend.
@@ -30,3 +32,27 @@ Now you can assign custom roles to users in LDAP. Make sure you use one of the L
 ```
 keystone user-role-add --user-id=12345 --role-id <role-id> --tenant-id <tenant-id>
 ```
+
+
+## The Assignment Backend
+
+This allows setting a default role and project for users signing in via LDAP. The default role is hacked in at runtime and added to any existing roles for the given user/project combination. This should be useful when you have a lot of LDAP users which you want to grant a default role to in OpenStack automatically only if/when they decide to use it. Since the database isn't touched, all you have to do to disable the default role is to switch off the assignment backend in `keystone.conf`.
+
+It is built on top of the SQL assignment backend.
+
+
+### Installation
+
+Edit the `hybrid_assignment.py` file in this project and set the `DEFAULT_PROJECT`, `DEFAULT_ROLE` and `DEFAULT_DOMAIN` constants at the top of the file. These should already exist in the database!
+
+Then copy the edited `hybrid_assignment.py` file to the `keystone/identity/backends/` folder of your installation (e.g. `/usr/lib/python/site-packages/keystone/assignment/backends/hybrid_assignment.py`).
+
+
+Set this in your `keystone.conf` file:
+
+```
+[assignment]
+driver = keystone.assignment.backends.hybrid_assignment.Assignment
+```
+
+Restart keystone.

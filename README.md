@@ -43,7 +43,7 @@ It is built on top of the SQL assignment backend.
 
 ### Installation
 
-Edit the `hybrid_assignment.py` file in this project and set the `DEFAULT_PROJECT`, `DEFAULT_ROLE` and `DEFAULT_DOMAIN` constants at the top of the file. These should already exist in the database!
+Edit the `hybrid_assignment.py` file in this project and set the `DEFAULT_PROJECT`, `DEFAULT_ROLE` and `DEFAULT_DOMAIN` constants at the top of the file. The corresponding objects should already exist in the database!
 
 Then copy the edited `hybrid_assignment.py` file to the `keystone/identity/backends/` folder of your installation (e.g. `/usr/lib/python/site-packages/keystone/assignment/backends/hybrid_assignment.py`).
 

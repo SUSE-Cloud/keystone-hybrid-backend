@@ -16,6 +16,7 @@
 
 """Hybrid Identity backend for Keystone on top of the LDAP and SQL backends"""
 
+from keystone.common import dependency
 from keystone.common import sql
 from keystone.common import utils
 from keystone import config
@@ -29,6 +30,7 @@ CONF = config.CONF
 LOG = log.getLogger(__name__)
 
 
+@dependency.requires('assignment_api')
 class Identity(sql_ident.Identity):
     def __init__(self, *args, **kwargs):
         super(Identity, self).__init__(*args, **kwargs)

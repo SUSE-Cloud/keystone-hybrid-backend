@@ -72,6 +72,9 @@ class Identity(sql_ident.Identity):
                     conn.unbind_s()
         else:
             LOG.debug("Authenticated user with SQL.")
+            # turn the SQLAlchemy User object into a dict to match what
+            # LDAP would return
+            user_ref = user_ref.to_dict()
 
         return identity.filter_user(user_ref)
 
@@ -86,12 +89,12 @@ class Identity(sql_ident.Identity):
             # then try LDAP
             return self.user.get(user_id)
         else:
-            return user_ref.to_dict()
+            return user_ref
 
     def get_user(self, user_id):
         LOG.debug("Called get_user %s" % user_id)
         session = sql.get_session()
-        return identity.filter_user(self._get_user(session, user_id))
+        return identity.filter_user(self._get_user(session, user_id).to_dict())
 
     def get_user_by_name(self, user_name, domain_id):
         LOG.debug("Called get_user_by_name %s, %s" % (user_name, domain_id))

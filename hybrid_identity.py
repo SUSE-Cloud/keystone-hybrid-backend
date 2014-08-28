@@ -96,7 +96,13 @@ class Identity(sql_ident.Identity):
     def get_user(self, user_id):
         LOG.debug("Called get_user %s" % user_id)
         session = sql.get_session()
-        return identity.filter_user(self._get_user(session, user_id).to_dict())
+        user = self._get_user(session, user_id)
+        try:
+            user = user.to_dict()
+        except AttributeError:
+            # LDAP Users are already dicts which is fine
+            pass
+        return identity.filter_user(user)
 
     def get_user_by_name(self, user_name, domain_id):
         LOG.debug("Called get_user_by_name %s, %s" % (user_name, domain_id))

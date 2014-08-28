@@ -56,7 +56,7 @@ class Assignment(sql_assign.Assignment):
                 role = session.query(sql_assign.Role).filter_by(
                     name=DEFAULT_ROLE).one()
             except sql.NotFound:
-                raise exception.RoleNotFound(role_id=role)
+                raise exception.RoleNotFound(role_id=DEFAULT_ROLE)
             self._default_role = role.id
 
         return self._default_role

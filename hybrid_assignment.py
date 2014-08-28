@@ -33,12 +33,13 @@ class Assignment(sql_assign.Assignment):
         except exception.MetadataNotFound:
             if self.default_project == tenant_id:
                 return {'roles': [{'id': self.default_role}]}
+            else:
+                raise
         else:
             roles = res.get('roles', [])
             roles.append({'id': self.default_role})
             res['roles'] = roles
-
-        return res
+            return res
 
     @property
     def default_project(self):

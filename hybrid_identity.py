@@ -51,14 +51,14 @@ class Identity(sql_ident.Identity):
         except exception.UserNotFound:
             raise AssertionError('Invalid user / password')
 
-        # if the user_ref has a password, it's from the SQL backend and
-        # we can just check if it coincides with the one we got
-        conn = None
         try:
+            # if the user_ref has a password, it's from the SQL backend and
+            # we can just check if it coincides with the one we got
             assert utils.check_password(password, user_ref['password'])
         except TypeError:
             raise AssertionError('Invalid user / password')
         except KeyError:  # if it doesn't have a password, it must be LDAP
+            conn = None
             try:
                 # get_connection does a bind for us which checks the password
                 conn = self.user.get_connection(self.user._id_to_dn(user_id),

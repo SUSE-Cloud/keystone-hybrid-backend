@@ -81,7 +81,16 @@ class Identity(sql_ident.Identity):
         return identity.filter_user(user_ref)
 
     def is_domain_aware(self):
-        return self.domain_aware
+        # XXX we only need domain_aware to be False when authenticating
+        # as an LDAP user; after that, all operations will be done on
+        # the SQL database and domain_aware needs to be True. This code
+        # makes the assumption that the result of authenticate() should
+        # be read as not domain_aware (for LDAP), after which
+        # domain_aware should revert to True.
+        domain_aware = self.domain_aware
+        if not self.domain_aware:
+            self.domain_aware = True
+        return domain_aware
 
     def _get_user(self, session, user_id):
         # try SQL first

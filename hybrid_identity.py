@@ -45,6 +45,9 @@ class Identity(sql_ident.Identity):
         it tries the LDAP backend.
 
         """
+        if not password:
+            raise AssertionError('Invalid user / password')
+
         session = sql.get_session()
         try:
             user_ref = self._get_user(session, user_id)

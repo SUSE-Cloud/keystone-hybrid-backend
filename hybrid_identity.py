@@ -101,8 +101,9 @@ class Identity(sql_ident.Identity):
             user_ref = super(Identity, self)._get_user(session, user_id)
         except exception.UserNotFound:
             # then try LDAP
-            return self.user.get(user_id)
+            user_ref = self.user.get(user_id)
             user_ref['domain_id'] = u'default'
+            return user_ref
         else:
             return user_ref
 

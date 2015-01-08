@@ -98,7 +98,7 @@ class Assignment(sql_assign.Assignment):
         # Make sure the default project is in the project list for the user
         # user_id
         for project in projects:
-            if project.id == self.default_project_id:
+            if project['id'] == self.default_project_id:
                 return projects
 
         projects.append(self.default_project)

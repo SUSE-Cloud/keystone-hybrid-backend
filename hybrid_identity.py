@@ -132,4 +132,6 @@ class Identity(sql_ident.Identity):
     def list_users(self, hints):
         sql_users = super(Identity, self).list_users(hints)
         ldap_users = self.user.get_all_filtered()
+        for user in ldap_users:
+            user['domain_id'] = CONF.identity.default_domain_id
         return sql_users + ldap_users

@@ -125,7 +125,9 @@ class Identity(sql_ident.Identity):
             user = super(Identity, self).get_user_by_name(user_name, domain_id)
         except exception.UserNotFound:
             # then try LDAP
-            return identity.filter_user(self.user.get_by_name(user_name))
+            user = identity.filter_user(self.user.get_by_name(user_name))
+            user['domain_id'] = CONF.identity.default_domain_id
+            return user
         else:
             return user
 

@@ -19,6 +19,7 @@ from keystone.assignment.backends import sql as sql_assign
 from keystone.common import sql
 from keystone import exception
 from keystone.openstack.common.gettextutils import _
+from keystone.identity.backends import ldap as ldap_backend
 
 
 hybrid_opts = [
@@ -41,13 +42,28 @@ class Assignment(sql_assign.Assignment):
     _default_roles = list()
     _default_project = None
 
+    def __init__(self, *args, **kwargs):
+        super(Assignment, self).__init__(*args, **kwargs)
+        self.ldap_user = ldap_backend.UserApi(CONF)
+
     def _get_metadata(self, user_id=None, tenant_id=None,
                       domain_id=None, group_id=None, session=None):
+        # We only want to apply 'default_roles' to users from LDAP, so
+        # check if this is an LDAP User first
+        is_ldap = False
+        try:
+            self.ldap_user.get(user_id)
+        except exception.UserNotFound:
+            # Not an LDAP User
+            pass
+        else:
+            is_ldap = True
+
         try:
             res = super(Assignment, self)._get_metadata(
                 user_id, tenant_id, domain_id, group_id, session)
         except exception.MetadataNotFound:
-            if self.default_project_id == tenant_id:
+            if self.default_project_id == tenant_id and is_ldap:
                 return {
                     'roles': [
                         {'id': role_id} for role_id in self.default_roles
@@ -56,10 +72,11 @@ class Assignment(sql_assign.Assignment):
             else:
                 raise
         else:
-            roles = res.get('roles', [])
-            res['roles'] = roles + [
-                {'id': role_id} for role_id in self.default_roles
-            ]
+            if is_ldap:
+                roles = res.get('roles', [])
+                res['roles'] = roles + [
+                    {'id': role_id} for role_id in self.default_roles
+                ]
             return res
 
     @property
@@ -101,5 +118,14 @@ class Assignment(sql_assign.Assignment):
             if project['id'] == self.default_project_id:
                 return projects
 
-        projects.append(self.default_project)
+        # We only want to apply 'default_project' to users from LDAP, so
+        # check if this is an LDAP User first
+        try:
+            self.ldap_user.get(user_id)
+        except exception.UserNotFound:
+            # Not an LDAP User
+            pass
+        else:
+            projects.append(self.default_project)
+
         return projects

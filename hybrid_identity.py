@@ -19,14 +19,15 @@
 from keystone.common import dependency
 from keystone.common import sql
 from keystone.common import utils
-from keystone import config
 from keystone import exception
 from keystone import identity
 from keystone.identity.backends import ldap as ldap_backend
 from keystone.identity.backends import sql as sql_ident
-from keystone.openstack.common import log
 
-CONF = config.CONF
+from oslo_config import cfg
+from oslo_log import log
+
+CONF = cfg.CONF
 LOG = log.getLogger(__name__)
 
 
@@ -34,7 +35,7 @@ LOG = log.getLogger(__name__)
 class Identity(sql_ident.Identity):
     def __init__(self, *args, **kwargs):
         super(Identity, self).__init__(*args, **kwargs)
-        self.user = ldap_backend.UserApi(CONF)
+        self.ldap = ldap_backend.Identity(CONF)
         self.domain_aware = True
 
     # Identity interface
@@ -58,15 +59,17 @@ class Identity(sql_ident.Identity):
             # if the user_ref has a password, it's from the SQL backend and
             # we can just check if it coincides with the one we got
             assert utils.check_password(password, user_ref['password']), \
-                   'Invalid user / password'
+                'Invalid user / password'
         except TypeError:
             raise AssertionError('Invalid user / password')
         except KeyError:  # if it doesn't have a password, it must be LDAP
             conn = None
             try:
                 # get_connection does a bind for us which checks the password
-                conn = self.user.get_connection(self.user._id_to_dn(user_id),
-                                                password)
+                #conn = self.user.get_connection(self.user._id_to_dn(user_id),
+                #                                password)
+                dn = self.ldap.user._id_to_dn(user_id)
+                conn = self.ldap.user.get_connection(dn, password)
                 assert conn
             except Exception:
                 raise AssertionError('Invalid user / password')
@@ -102,7 +105,7 @@ class Identity(sql_ident.Identity):
             user_ref = super(Identity, self)._get_user(session, user_id)
         except exception.UserNotFound:
             # then try LDAP
-            user_ref = self.user.get(user_id)
+            user_ref = self.ldap.user.get(user_id)
             user_ref['domain_id'] = CONF.identity.default_domain_id
             return user_ref
         else:
@@ -126,7 +129,7 @@ class Identity(sql_ident.Identity):
             user = super(Identity, self).get_user_by_name(user_name, domain_id)
         except exception.UserNotFound:
             # then try LDAP
-            user = identity.filter_user(self.user.get_by_name(user_name))
+            user = identity.filter_user(self.ldap.user.get_by_name(user_name))
             user['domain_id'] = CONF.identity.default_domain_id
             return user
         else:
@@ -134,7 +137,15 @@ class Identity(sql_ident.Identity):
 
     def list_users(self, hints):
         sql_users = super(Identity, self).list_users(hints)
-        ldap_users = self.user.get_all_filtered()
+        ldap_users = self.ldap.user.get_all_filtered(hints)
         for user in ldap_users:
             user['domain_id'] = CONF.identity.default_domain_id
         return sql_users + ldap_users
+
+    def update_user(self, user_id, user):
+        session = sql.get_session()
+        user_ref = self._get_user(session, user_id)
+        # LDAP user_ref is a dict. SQL user_ref is a User object
+        if isinstance(user_ref, dict):
+            return self.ldap.update_user(user_id, user)
+        return super(Identity, self).update_user(user_id, user)

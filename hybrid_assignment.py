@@ -16,11 +16,16 @@
 from oslo.config import cfg
 from keystone import config
 from keystone.assignment.backends import sql as sql_assign
+from keystone.assignment.role_backends import sql as sql_role
 from keystone.common import sql
 from keystone import exception
-from keystone.openstack.common.gettextutils import _
+from keystone.i18n import _
 from keystone.identity.backends import ldap as ldap_backend
 
+from oslo_utils import importutils
+from oslo_log import log
+
+LOG = log.getLogger(__name__)
 
 hybrid_opts = [
     cfg.ListOpt('default_roles',
@@ -45,6 +50,8 @@ class Assignment(sql_assign.Assignment):
     def __init__(self, *args, **kwargs):
         super(Assignment, self).__init__(*args, **kwargs)
         self.ldap_user = ldap_backend.UserApi(CONF)
+        self.resource_driver = importutils.import_object(
+            self.default_resource_driver())
 
     def _get_metadata(self, user_id=None, tenant_id=None,
                       domain_id=None, group_id=None, session=None):
@@ -82,7 +89,7 @@ class Assignment(sql_assign.Assignment):
     @property
     def default_project(self):
         if self._default_project is None:
-            self._default_project = self.get_project_by_name(
+            self._default_project = self.resource_driver.get_project_by_name(
                 CONF.ldap_hybrid.default_project,
                 CONF.ldap_hybrid.default_domain)
         return dict(self._default_project)
@@ -95,8 +102,8 @@ class Assignment(sql_assign.Assignment):
     def default_roles(self):
         if not self._default_roles:
             with sql.transaction() as session:
-                query = session.query(sql_assign.Role)
-                query = query.filter(sql_assign.Role.name.in_(
+                query = session.query(sql_role.RoleTable)
+                query = query.filter(sql_role.RoleTable.name.in_(
                     CONF.ldap_hybrid.default_roles))
                 role_refs = query.all()
 
@@ -108,15 +115,15 @@ class Assignment(sql_assign.Assignment):
             self._default_roles = [role_ref.id for role_ref in role_refs]
         return self._default_roles
 
-    def list_projects_for_user(self, user_id, group_ids, hints):
-        projects = super(Assignment, self).list_projects_for_user(
+    def list_project_ids_for_user(self, user_id, group_ids, hints):
+        project_ids = super(Assignment, self).list_project_ids_for_user(
             user_id, group_ids, hints)
 
         # Make sure the default project is in the project list for the user
         # user_id
-        for project in projects:
-            if project['id'] == self.default_project_id:
-                return projects
+        for project_id in project_ids:
+            if project_id == self.default_project_id:
+                return project_ids
 
         # We only want to apply 'default_project' to users from LDAP, so
         # check if this is an LDAP User first
@@ -126,6 +133,6 @@ class Assignment(sql_assign.Assignment):
             # Not an LDAP User
             pass
         else:
-            projects.append(self.default_project)
+            project_ids.append(self.default_project_id)
 
-        return projects
+        return project_ids

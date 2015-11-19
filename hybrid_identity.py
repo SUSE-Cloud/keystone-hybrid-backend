@@ -57,7 +57,8 @@ class Identity(sql_ident.Identity):
         try:
             # if the user_ref has a password, it's from the SQL backend and
             # we can just check if it coincides with the one we got
-            assert utils.check_password(password, user_ref['password'])
+            assert utils.check_password(password, user_ref['password']), \
+                   'Invalid user / password'
         except TypeError:
             raise AssertionError('Invalid user / password')
         except KeyError:  # if it doesn't have a password, it must be LDAP

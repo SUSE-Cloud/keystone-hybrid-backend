@@ -142,7 +142,11 @@ class Identity(sql_ident.Identity):
             return user
 
     def list_users(self, hints):
+        # get a copy of the filters to be able to pass them into the
+        # ldap backends
+        save_filters = list(hints.filters)
         sql_users = super(Identity, self).list_users(hints)
+        hints.filters = save_filters
         ldap_users = self.ldap.user.get_all_filtered(hints)
         for user in ldap_users:
             user['domain_id'] = CONF.identity.default_domain_id

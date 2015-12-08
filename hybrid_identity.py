@@ -104,6 +104,12 @@ class Identity(sql_ident.Identity):
             # then try LDAP
             user_ref = self.user.get(user_id)
             user_ref['domain_id'] = CONF.identity.default_domain_id
+            # Above we assume no password is in the user_ref:
+            # except KeyError:  # if it doesn't have a password, it must be LDAP
+            # But if the LDAP server returns a password, this except
+            # fails so we should remove it if it's there
+            if 'password' in user_ref:
+              del user_ref['password']
             return user_ref
         else:
             return user_ref

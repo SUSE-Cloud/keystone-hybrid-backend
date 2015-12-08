@@ -139,7 +139,11 @@ class Identity(sql_ident.Identity):
             return user
 
     def list_users(self, hints):
+        # get a copy of the filters to be able to restore them for correct
+        # filtering of the LDAP results
+        save_filters = list(hints.filters)
         sql_users = super(Identity, self).list_users(hints)
+        hints.filters = save_filters
         ldap_users = self.user.get_all_filtered()
         for user in ldap_users:
             user['domain_id'] = CONF.identity.default_domain_id

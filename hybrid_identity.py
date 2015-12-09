@@ -147,9 +147,16 @@ class Identity(sql_ident.Identity):
         save_filters = list(hints.filters)
         sql_users = super(Identity, self).list_users(hints)
         hints.filters = save_filters
-        ldap_users = self.ldap.user.get_all_filtered(hints)
-        for user in ldap_users:
-            user['domain_id'] = CONF.identity.default_domain_id
+        # Assume that LDAP users are in the default domain, so only query ldap
+        # when there's either no domain filter or when it matches the default
+        # domain id.
+        domain_filter = hints.get_exact_filter_by_name('domain_id')
+        ldap_users = []
+        if (not domain_filter or
+               domain_filter['value'] == CONF.identity.default_domain_id):
+            ldap_users = self.ldap.user.get_all_filtered(hints)
+            for user in ldap_users:
+                user['domain_id'] = CONF.identity.default_domain_id
         return sql_users + ldap_users
 
     def update_user(self, user_id, user):

@@ -36,7 +36,10 @@ hybrid_opts = [
                help='Default project'),
     cfg.StrOpt('default_domain',
                default='default',
-               help='Default domain'),
+               deprecated_name='default_domain',
+               deprecated_for_removal=True,
+               help='(Deprecated) Default domain. Use "default_domain_id" '
+                    'instead.'),
 ]
 
 CONF = config.CONF
@@ -91,7 +94,7 @@ class Assignment(sql_assign.Assignment):
         if self._default_project is None:
             self._default_project = self.resource_driver.get_project_by_name(
                 CONF.ldap_hybrid.default_project,
-                CONF.ldap_hybrid.default_domain)
+                CONF.identity.default_domain_id)
         return dict(self._default_project)
 
     @property

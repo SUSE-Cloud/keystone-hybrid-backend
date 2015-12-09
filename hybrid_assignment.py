@@ -108,6 +108,25 @@ class Assignment(sql_assign.Assignment):
             self._default_roles = [role_ref.id for role_ref in role_refs]
         return self._default_roles
 
+    def list_role_assignments(self):
+        role_assignments = super(Assignment, self).list_role_assignments()
+        ldap_users = self.ldap_user.get_all_filtered()
+        # This will be really slow for setups with lots of users, but there
+        # is not other way to achieve it currently
+        for user in ldap_users:
+            # Skip LDAP User if it already as an assignemt, else add the default
+            # assignment
+            if any(a for a in role_assignments if a['user_id'] == user['id']):
+                continue
+            else:
+                for role in self.default_roles:
+                    role_assignments.append({
+                        'role_id': role,
+                        'project_id': self.default_project_id,
+                        'user_id': user['id']
+                    })
+        return role_assignments
+
     def list_projects_for_user(self, user_id, group_ids, hints):
         projects = super(Assignment, self).list_projects_for_user(
             user_id, group_ids, hints)

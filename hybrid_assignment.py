@@ -1,5 +1,5 @@
 # Copyright 2014 Hewlett-Packard Development Company, L.P.
-# Copyright 2014 SUSE Linux Products GmbH
+# Copyright 2014-2015 SUSE Linux Products GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain

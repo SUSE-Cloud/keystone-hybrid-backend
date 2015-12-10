@@ -13,7 +13,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-from oslo.config import cfg
+from oslo_config import cfg
 from keystone import config
 from keystone.assignment.backends import sql as sql_assign
 from keystone.assignment.role_backends import sql as sql_role

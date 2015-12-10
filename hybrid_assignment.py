@@ -18,6 +18,7 @@ from keystone import config
 from keystone.assignment.backends import sql as sql_assign
 from keystone.assignment.role_backends import sql as sql_role
 from keystone.common import sql
+from keystone.common import manager
 from keystone import exception
 from keystone.i18n import _
 from keystone.identity.backends import ldap as ldap_backend
@@ -53,8 +54,8 @@ class Assignment(sql_assign.Assignment):
     def __init__(self, *args, **kwargs):
         super(Assignment, self).__init__(*args, **kwargs)
         self.ldap_user = ldap_backend.UserApi(CONF)
-        self.resource_driver = importutils.import_object(
-            self.default_resource_driver())
+        self.resource_driver = manager.load_driver(
+            'keystone.resource', self.default_resource_driver())
 
     def _get_metadata(self, user_id=None, tenant_id=None,
                       domain_id=None, group_id=None, session=None):

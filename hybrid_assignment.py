@@ -1,5 +1,5 @@
 # Copyright 2014 Hewlett-Packard Development Company, L.P.
-# Copyright 2014 SUSE Linux Products GmbH
+# Copyright 2014-2015 SUSE Linux Products GmbH
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -36,7 +36,10 @@ hybrid_opts = [
                help='Default project'),
     cfg.StrOpt('default_domain',
                default='default',
-               help='Default domain'),
+               deprecated_name='default_domain',
+               deprecated_for_removal=True,
+               help='(Deprecated) Default domain. Use "default_domain_id" '
+                    'instead.'),
 ]
 
 CONF = config.CONF
@@ -91,7 +94,7 @@ class Assignment(sql_assign.Assignment):
         if self._default_project is None:
             self._default_project = self.resource_driver.get_project_by_name(
                 CONF.ldap_hybrid.default_project,
-                CONF.ldap_hybrid.default_domain)
+                CONF.identity.default_domain_id)
         return dict(self._default_project)
 
     @property
@@ -114,6 +117,25 @@ class Assignment(sql_assign.Assignment):
 
             self._default_roles = [role_ref.id for role_ref in role_refs]
         return self._default_roles
+
+    def list_role_assignments(self):
+        role_assignments = super(Assignment, self).list_role_assignments()
+        ldap_users = self.ldap_user.get_all_filtered(None)
+        # This will be really slow for setups with lots of users, but there
+        # is not other way to achieve it currently
+        for user in ldap_users:
+            # Skip LDAP User if it already as an assignemt, else add the default
+            # assignment
+            if any(a for a in role_assignments if a['user_id'] == user['id']):
+                continue
+            else:
+                for role in self.default_roles:
+                    role_assignments.append({
+                        'role_id': role,
+                        'project_id': self.default_project_id,
+                        'user_id': user['id']
+                    })
+        return role_assignments
 
     def list_project_ids_for_user(self, user_id, group_ids, hints):
         project_ids = super(Assignment, self).list_project_ids_for_user(

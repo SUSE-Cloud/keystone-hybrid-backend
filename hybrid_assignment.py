@@ -23,7 +23,6 @@ from keystone import exception
 from keystone.i18n import _
 from keystone.identity.backends import ldap as ldap_backend
 
-from oslo_utils import importutils
 from oslo_log import log
 
 LOG = log.getLogger(__name__)

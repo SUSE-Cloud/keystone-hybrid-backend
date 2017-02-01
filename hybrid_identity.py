@@ -112,7 +112,7 @@ class Identity(sql_ident.Identity):
             # But if the LDAP server returns a password, this except
             # fails so we should remove it if it's there
             if 'password' in user_ref:
-              del user_ref['password']
+                del user_ref['password']
             return user_ref
         else:
             return user_ref
@@ -153,7 +153,7 @@ class Identity(sql_ident.Identity):
         domain_filter = hints.get_exact_filter_by_name('domain_id')
         ldap_users = []
         if (not domain_filter or
-               domain_filter['value'] == CONF.identity.default_domain_id):
+                domain_filter['value'] == CONF.identity.default_domain_id):
             ldap_users = self.ldap.user.get_all_filtered(hints)
             for user in ldap_users:
                 user['domain_id'] = CONF.identity.default_domain_id
